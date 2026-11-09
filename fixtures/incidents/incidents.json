@@ -1,0 +1,76 @@
+[
+  {
+    "incident_id": "INC-4401",
+    "service": "checkout-api",
+    "severity": "p1",
+    "error_class": "OOMKilled",
+    "error_code": "OOMKilled",
+    "top_frames": [
+      "com.acme.checkout.PricingCache.get",
+      "com.acme.checkout.CartService.price"
+    ],
+    "symptom": "Pods restart every 90s; RSS climbs to the 2Gi limit.",
+    "version": "v2.14",
+    "environment": "prod",
+    "message": "KubePodCrashLooping checkout-api restart=6 in 10m, RSS at limit."
+  },
+  {
+    "incident_id": "INC-4412",
+    "service": "orders-api",
+    "severity": "p1",
+    "error_class": "SQLTransientConnectionException",
+    "error_code": "POOL_EXHAUSTED",
+    "top_frames": [
+      "com.zaxxer.hikari.pool.HikariPool.getConnection",
+      "com.acme.orders.OrderRepo.save"
+    ],
+    "symptom": "p99 latency 40s, POST /orders 503s, pool 100/100.",
+    "version": "v3.3.0",
+    "environment": "prod",
+    "message": "HikariPool-1 Connection is not available, timed out after 30000ms."
+  },
+  {
+    "incident_id": "INC-4418",
+    "service": "session-svc",
+    "severity": "p2",
+    "error_class": "CacheMissStorm",
+    "error_code": "REDIS_EVICTED",
+    "top_frames": [
+      "io.lettuce.core.cluster.RedisClusterClient.connect"
+    ],
+    "symptom": "Session misses 94%, login redirects, node memory 100%.",
+    "version": "shared-cache",
+    "environment": "prod",
+    "message": "redis_evicted_keys_total spike with session-svc 401 rate above 15%."
+  },
+  {
+    "incident_id": "INC-4421",
+    "service": "checkout-api",
+    "severity": "p1",
+    "error_class": "OOMKilled",
+    "error_code": "OOMKilled",
+    "top_frames": [
+      "com.acme.checkout.PricingCache.get",
+      "com.acme.checkout.CartService.price"
+    ],
+    "symptom": "Pods restart every 90s; RSS climbs to the 2Gi limit.",
+    "version": "v2.14",
+    "environment": "prod",
+    "message": "KubePodCrashLooping checkout-api restart=6 in 10m, RSS at limit."
+  },
+  {
+    "incident_id": "INC-4422",
+    "service": "checkout-api",
+    "severity": "p1",
+    "error_class": "OOMKilled",
+    "error_code": "OOMKilled",
+    "top_frames": [
+      "com.acme.checkout.PricingCache.get",
+      "com.acme.checkout.CartService.price"
+    ],
+    "symptom": "Pods restart every 90s; RSS climbs to the 2Gi limit.",
+    "version": "v2.14",
+    "environment": "prod",
+    "message": "KubePodCrashLooping checkout-api restart=6 in 10m, RSS at limit."
+  }
+]

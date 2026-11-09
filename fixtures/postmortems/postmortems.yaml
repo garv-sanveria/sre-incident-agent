@@ -1,0 +1,94 @@
+- incident_id: INC-4401
+  service: checkout-api
+  error_class: OOMKilled
+  error_code: OOMKilled
+  severity: p1
+  started_at: '2026-08-14T02:11:00Z'
+  resolved_at: '2026-08-14T02:53:00Z'
+  mttr_minutes: 42
+  top_frames:
+  - com.acme.checkout.PricingCache.get
+  - com.acme.checkout.CartService.price
+  root_cause: checkout-api v2.14 removed the 60s PricingCache TTL; unbounded Caffeine
+    cache growth reached the 2Gi container limit.
+  root_cause_slug: unbounded-cache
+  trigger: PR 8812 removed cache TTL during a latency optimization.
+  alert_signature: KubePodCrashLooping checkout-api restart=6 in 10m, RSS at limit.
+  impact: 38 minutes of failed checkouts, 4100 lost orders, synthetic $212k GMV impact.
+  failed_attempts: Pod restarts failed; scaling to 12 replicas masked the issue for
+    only four minutes.
+  resolution_steps:
+  - Rolled checkout-api back to the approved v2.13.7 image.
+  - Flushed only the pricing cache keyspace.
+  - Observed RSS below 1.2Gi for five minutes.
+  verification: Zero restarts for 10 minutes, RSS stable, checkout success 99.8%.
+  prevention: Restore TTL in v2.14.1 and alert at 70% heap.
+  author: priya
+  verified_by: sre-oncall:priya
+  runbook_id: RB-CHECKOUT-OOM
+  pr_url: https://github.com/acme/checkout/pull/8821
+  environment: prod
+  resolution_status: verified
+  valid_until: '2027-12-31T23:59:59Z'
+- incident_id: INC-4412
+  service: orders-api
+  error_class: SQLTransientConnectionException
+  error_code: POOL_EXHAUSTED
+  severity: p1
+  started_at: '2026-09-02T14:40:00Z'
+  resolved_at: '2026-09-02T15:58:00Z'
+  mttr_minutes: 78
+  top_frames:
+  - com.zaxxer.hikari.pool.HikariPool.getConnection
+  - com.acme.orders.OrderRepo.save
+  root_cause: OrderRepo.save released pooled connections only on success; retries
+    during downstream 5xx leaked connections until the pool reached 100/100.
+  root_cause_slug: connection-leak
+  trigger: Payment provider returned 12% 5xx for 20 minutes.
+  alert_signature: HikariPool-1 Connection is not available, timed out after 30000ms.
+  impact: 78 minutes of order creation failures; 11000 synthetic rejected requests.
+  failed_attempts: Increasing pool size to 200 delayed exhaustion nine minutes; restarts
+    helped for six minutes.
+  resolution_steps:
+  - Rolled orders-api back to v3.2.1 with finally-block connection release.
+  - Drained leaked connections by restarting pods.
+  - Temporarily increased PgBouncer pool headroom.
+  verification: Active connections stayed at 34/100 for 15 minutes and p99 below 300ms.
+  prevention: Add CI leak detection and pool utilization alerts above 80%.
+  author: marco
+  verified_by: sre-oncall:marco
+  runbook_id: RB-ORDERS-POOL
+  pr_url: ''
+  environment: prod
+  resolution_status: verified
+  valid_until: '2027-12-31T23:59:59Z'
+- incident_id: INC-4418
+  service: session-svc
+  error_class: CacheMissStorm
+  error_code: REDIS_EVICTED
+  severity: p2
+  started_at: '2026-09-19T09:05:00Z'
+  resolved_at: '2026-09-19T09:29:00Z'
+  mttr_minutes: 24
+  top_frames:
+  - io.lettuce.core.cluster.RedisClusterClient.connect
+  root_cause: Session keys shared Redis with analytics under allkeys-lru; a bulk import
+    evicted 2.1M session keys and caused validation failures.
+  root_cause_slug: cache-eviction-storm
+  trigger: Nightly analytics backfill wrote 4GB into cache-session-prod.
+  alert_signature: redis_evicted_keys_total spike with session-svc 401 rate above
+    15%.
+  impact: 24 minutes of disruption and 60000 synthetic users re-authenticating.
+  failed_attempts: Restarting session-svc amplified database load.
+  resolution_steps:
+  - Protected session keys using volatile-lru.
+  - Moved analytics to cache-analytics-prod.
+  verification: Evictions zero for 20 minutes, 401 rate 0.4%, cache miss rate 6%.
+  prevention: Separate Redis instances by workload and tag key ownership.
+  author: dana
+  verified_by: sre-oncall:dana
+  runbook_id: RB-SESSION-EVICT
+  pr_url: ''
+  environment: prod
+  resolution_status: verified
+  valid_until: '2027-12-31T23:59:59Z'
